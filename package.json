@@ -1,0 +1,30 @@
+{
+  "name": "document-converter-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hasna-Nachiyar-S/Document-Converter-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Hasna-Nachiyar-S/Document-Converter-api/issues"
+  },
+  "homepage": "https://github.com/Hasna-Nachiyar-S/Document-Converter-api#readme",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "cloudconvert": "^3.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "fs-extra": "^11.3.5",
+    "multer": "^2.1.1"
+  }
+}
