@@ -23,36 +23,91 @@ app.get("/", (req, res) => {
 
 app.post("/convert", upload.single("file"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No file uploaded",
+      });
+    }
+
     const sourceFormat = req.file.originalname.split(".").pop().toLowerCase();
 
     const targetFormat = req.body.targetFormat;
 
+    console.log("Source:", sourceFormat);
+    console.log("Target:", targetFormat);
+
+    // CREATE JOB
+
     const job = await cloudConvert.jobs.create({
       tasks: {
-        "import-my-file": {
+        importFile: {
           operation: "import/upload",
         },
-        "convert-my-file": {
+
+        convertFile: {
           operation: "convert",
-          input: "import-my-file",
+          input: "importFile",
           input_format: sourceFormat,
           output_format: targetFormat,
         },
-        "export-my-file": {
+
+        exportFile: {
           operation: "export/url",
-          input: "convert-my-file",
+          input: "convertFile",
         },
       },
     });
 
-    console.log("JOB CREATED:");
+    // FIND IMPORT TASK
 
-    console.log(job.id);
+    const importTask = job.tasks.find((task) => task.name === "importFile");
 
-    res.json({
-      success: true,
-      jobId: job.id,
+    // UPLOAD FILE TO CLOUDCONVERT
+
+    await cloudConvert.tasks.upload(
+      importTask,
+      fs.createReadStream(req.file.path),
+      req.file.originalname,
+    );
+
+    console.log("File uploaded");
+
+    // WAIT FOR JOB
+
+    const completedJob = await cloudConvert.jobs.wait(job.id);
+
+    console.log("Conversion completed");
+
+    // FIND EXPORT TASK
+
+    const exportTask = completedJob.tasks.find(
+      (task) => task.name === "exportFile",
+    );
+
+    const file = exportTask.result.files[0];
+
+    console.log("Download URL:", file.url);
+
+    // DOWNLOAD CONVERTED FILE
+
+    const response = await axios.get(file.url, {
+      responseType: "arraybuffer",
     });
+
+    // SEND FILE BACK
+
+    res.setHeader("Content-Type", response.headers["content-type"]);
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="converted.${targetFormat}"`,
+    );
+
+    res.send(response.data);
+
+    // CLEAN UP
+
+    fs.unlinkSync(req.file.path);
   } catch (error) {
     console.error(error);
 
